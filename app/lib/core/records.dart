@@ -9,14 +9,33 @@ import 'crypto.dart';
 /// Author ID and device ID used by events that HQ signs directly.
 const hqId = 'hq';
 
+/// Stock taking and supply requests are open to every role.
+const inventoryPermissions = {EventTypes.stockCounted, EventTypes.stockAdjusted, EventTypes.supplyRequested};
+
 /// What each role may sign. Every phone checks this on receipt as well as when creating.
 const rolePermissions = <Role, Set<String>>{
-  Role.triage: {EventTypes.patientRegistered, EventTypes.priorityChanged, EventTypes.observationAdded},
-  Role.clinician: {EventTypes.diagnosisRecorded, EventTypes.remediationRecorded, EventTypes.followUpRecommended},
-  Role.admin: {EventTypes.announcementPosted, EventTypes.messageSent},
+  Role.triage: {
+    EventTypes.patientRegistered,
+    EventTypes.priorityChanged,
+    EventTypes.observationAdded,
+    ...inventoryPermissions,
+  },
+  Role.clinician: {
+    EventTypes.diagnosisRecorded,
+    EventTypes.remediationRecorded,
+    EventTypes.followUpRecommended,
+    ...inventoryPermissions,
+  },
+  Role.admin: {EventTypes.announcementPosted, EventTypes.messageSent, ...inventoryPermissions},
 };
 
-const hqPermissions = {EventTypes.hqAck, EventTypes.announcementPosted};
+/// Events only HQ signs: acknowledgements, broadcasts, audit decisions and supply-request updates.
+const hqPermissions = {
+  EventTypes.hqAck,
+  EventTypes.announcementPosted,
+  EventTypes.conflictResolved,
+  EventTypes.requestUpdated,
+};
 
 abstract class EventTypes {
   static const patientRegistered = 'PatientRegistered';
@@ -27,7 +46,12 @@ abstract class EventTypes {
   static const followUpRecommended = 'FollowUpRecommended';
   static const announcementPosted = 'AnnouncementPosted';
   static const messageSent = 'MessageSent';
+  static const stockCounted = 'StockCounted';
+  static const stockAdjusted = 'StockAdjusted';
+  static const supplyRequested = 'SupplyRequested';
   static const hqAck = 'HqAck';
+  static const conflictResolved = 'ConflictResolved';
+  static const requestUpdated = 'RequestUpdated';
 }
 
 /// HQ-signed binding of a user ID, name, role and device to that person's public key.

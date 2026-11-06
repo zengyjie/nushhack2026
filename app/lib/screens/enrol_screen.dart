@@ -16,15 +16,17 @@ class EnrolScreen extends StatefulWidget {
 class _EnrolScreenState extends State<EnrolScreen> {
   final _name = TextEditingController();
   final _pin = TextEditingController();
+  final _facility = TextEditingController();
   final Set<Role> _roles = {};
   bool _issuing = false;
 
-  bool get _ready => _name.text.trim().isNotEmpty && _roles.isNotEmpty && _pin.text.length >= 4;
+  bool get _ready =>
+      _name.text.trim().isNotEmpty && _facility.text.trim().isNotEmpty && _roles.isNotEmpty && _pin.text.length >= 4;
 
   Future<void> _submit() async {
     setState(() => _issuing = true);
     try {
-      await StoreScope.of(context).enrol(_name.text.trim(), {..._roles}, _pin.text);
+      await StoreScope.of(context).enrol(_name.text.trim(), {..._roles}, _pin.text, _facility.text.trim());
     } catch (e) {
       if (!mounted) return;
       setState(() => _issuing = false);
@@ -63,6 +65,18 @@ class _EnrolScreenState extends State<EnrolScreen> {
                   controller: _name,
                   textCapitalization: TextCapitalization.words,
                   decoration: const InputDecoration(labelText: 'Rank and name', prefixIcon: Icon(Icons.badge_outlined)),
+                  onChanged: (_) => setState(() {}),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _facility,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
+                    labelText: 'Facility',
+                    hintText: 'Field hospital or aid station name',
+                    helperText: 'Tags your patients and stock. You can change it later on the Mesh tab.',
+                    prefixIcon: Icon(Icons.local_hospital_outlined),
+                  ),
                   onChanged: (_) => setState(() {}),
                 ),
                 const SectionLabel('Roles · pick one or more'),

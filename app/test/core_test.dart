@@ -88,6 +88,10 @@ void main() {
     expect(rolePermissions[Role.triage], contains(EventTypes.observationAdded));
     expect(rolePermissions[Role.triage], isNot(contains(EventTypes.announcementPosted)));
     expect(rolePermissions[Role.clinician], contains(EventTypes.remediationRecorded));
-    expect(rolePermissions[Role.admin], {EventTypes.announcementPosted, EventTypes.messageSent});
+    expect(rolePermissions[Role.admin], {EventTypes.announcementPosted, EventTypes.messageSent, ...inventoryPermissions});
+    for (final r in Role.values) {
+      expect(rolePermissions[r], containsAll(inventoryPermissions), reason: '${r.name} can do stock taking');
+      expect(rolePermissions[r], isNot(contains(EventTypes.conflictResolved)), reason: 'only HQ resolves conflicts');
+    }
   });
 }

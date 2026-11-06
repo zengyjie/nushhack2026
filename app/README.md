@@ -1,15 +1,22 @@
 # MESH: field hospital app (MVP)
 
-An Android app for field hospital operators. It shows three of the four selling points from the ideation deck:
+An Android app for field hospital operators, paired with the HQ server in [`../hq`](../hq/README.md). It shows the four selling points from the ideation deck:
 
 | | What it does here |
 |---|---|
 | **OFF** | Every action is a signed event stored in SQLite on the phone, so the app works with no network. |
 | **LC** | Events spread over a Bluetooth LE mesh using the engine from `ble_lab/`, hopping from phone to phone. |
-| **ON** | A phone with **Uplink** switched on forwards the cluster's events to a *mock* HQ store and floods back an HQ-signed acknowledgement. |
+| **ON** | A phone with **Uplink** switched on syncs the cluster with the HQ server. It floods HQ's signed acknowledgements, broadcasts, audit decisions and supply-request updates back over Bluetooth, so phones without internet get them too. |
 | **SEC** | Ed25519 signatures, HQ-signed certificates, per-device hash chains and role checks, all verified offline. |
 
-There's no real certificate authority and no cloud backend. Both are simulated, as described below.
+There's no real certificate authority: certificates are self-issued with a demo HQ key, as described below.
+
+## Tabs
+
+- **Patients:** triage, clinical record, and HQ audit decisions. A record HQ overruled is struck through, and the patient's priority ignores it.
+- **Stock:** stock taking for this phone's facility, use and receipt of stock, other facilities' stock seen over the mesh, and supply requests to HQ with their status. Every role can do these.
+- **Board:** announcements from admins and from HQ, and messages.
+- **Mesh:** Bluetooth peers, HQ uplink and sync status, and **Device settings**, where you set the HQ server URL and this phone's facility.
 
 ## Roles
 
@@ -18,6 +25,7 @@ There's no real certificate authority and no cloud backend. Both are simulated, 
 | Triage | Register a patient, change priority, add clinical observations |
 | Diagnosis & treatment | Diagnosis, remediation performed, recommended follow-up |
 | Admin | Announcements, messages to everyone, a role or a person (read-only on clinical records) |
+| Every role | Stock counts, stock use and receipt, supply requests |
 
 A person can hold more than one role. Their certificate lists every role they hold, and they can sign anything any of those roles allows. Every phone checks the roles again when an event arrives. An event whose author doesn't hold a role that allows it is rejected and not forwarded.
 
@@ -55,11 +63,12 @@ Grant **Nearby devices** when asked. The screen stays on because there's no fore
 2. On the triage phone, register a patient and add an observation. It appears on the other phones within a few seconds.
 3. On the diagnosis & treatment phone, record a diagnosis, remediation and follow-up.
 4. On the admin phone, post an announcement.
-5. On any one phone, open Mesh and switch on **Uplink to HQ**. Every phone then shows records as synced to HQ.
+5. Start the HQ server (`../hq/scripts/start.sh`, then `scripts/tunnel.sh`). On any one phone that has internet, open Mesh, paste the tunnel URL into **HQ server**, save, and switch on **Uplink to HQ**. Every phone then shows records as synced to HQ.
+6. On the HQ console, broadcast an announcement or resolve a conflict. It reaches the uplink phone within 15 s and the rest of the cluster over Bluetooth.
 
 ## Known limits
 
-- The HQ private key ships in the app (demo only), and the mock HQ is a local SQLite file on the uplink phone.
+- The HQ private key ships in the app (demo only) and matches the server's default `HQ_SEED_HEX`.
 - Catch-up sends every event held, which is fine at field-cluster scale but not optimised.
 - Messages are flooded to every phone and only filtered on display. They aren't encrypted to the recipient.
 - Revocation and the peer challenge-response handshake are not implemented yet.

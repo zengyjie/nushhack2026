@@ -34,14 +34,20 @@ class PatientDetailScreen extends StatelessWidget {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(children: [
                   PriorityChip(p.priority),
+                  if (p.voided) ...[const SizedBox(width: 8), const AuditChip(voided: true)],
                   const Spacer(),
                   ReachIcon(p.reach, showLabel: true),
                 ]),
+                if (p.displayName.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(p.displayName, style: t.titleMedium),
+                ],
                 const SizedBox(height: 12),
                 Text(p.description, style: t.titleMedium?.copyWith(fontWeight: FontWeight.w500, height: 1.35)),
                 const SizedBox(height: 14),
                 Wrap(spacing: 18, runSpacing: 8, children: [
                   _meta(context, Icons.schedule, 'Arrived ${hhmm(p.arrival)} · ${timeAgo(p.arrival)}'),
+                  _meta(context, Icons.local_hospital_outlined, p.facility.isEmpty ? 'Facility not set' : p.facility),
                   _meta(context, Icons.place_outlined, p.location),
                   _meta(context, Icons.person_outline, 'by ${registered.author.name}'),
                 ]),
@@ -50,6 +56,10 @@ class PatientDetailScreen extends StatelessWidget {
               ]),
             ),
           ),
+          if (p.voided) ...[
+            const SizedBox(height: 12),
+            _AuditBanner(mark: p.entries.first.audit!, subject: 'This registration'),
+          ],
           SectionLabel('Record · ${p.entries.length} signed entries'),
           for (var i = p.entries.length - 1; i >= 0; i--)
             _TimelineEntry(entry: p.entries[i], first: i == p.entries.length - 1, last: i == 0),
@@ -149,8 +159,18 @@ class _TimelineEntry extends StatelessWidget {
                     Expanded(child: Text(e.type.label, style: t.titleSmall)),
                     Text(hhmm(e.time), style: t.labelSmall?.copyWith(color: Brand.bark)),
                   ]),
+                  if (e.audit != null) ...[const SizedBox(height: 6), AuditChip(voided: e.voided)],
                   const SizedBox(height: 6),
-                  Text(e.text, style: t.bodyMedium?.copyWith(height: 1.35)),
+                  Text(e.text,
+                      style: t.bodyMedium?.copyWith(
+                        height: 1.35,
+                        decoration: e.voided ? TextDecoration.lineThrough : null,
+                        color: e.voided ? Brand.bark : null,
+                      )),
+                  if (e.audit != null && e.audit!.note.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text('HQ: ${e.audit!.note}', style: t.bodySmall?.copyWith(fontStyle: FontStyle.italic)),
+                  ],
                   if (e.fields.isNotEmpty) ...[
                     const SizedBox(height: 10),
                     Wrap(spacing: 6, runSpacing: 6, children: [
@@ -175,6 +195,34 @@ class _TimelineEntry extends StatelessWidget {
               ),
             ),
           ),
+        ),
+      ]),
+    );
+  }
+}
+
+/// Explains an HQ audit decision that overruled this patient's registration.
+class _AuditBanner extends StatelessWidget {
+  const _AuditBanner({required this.mark, required this.subject});
+  final AuditMark mark;
+  final String subject;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).textTheme;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(color: Brand.stone.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(Brand.radius)),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Icon(Icons.gavel, size: 20, color: Brand.soil),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('$subject was overruled by HQ (${mark.kindLabel})', style: t.titleSmall),
+            if (mark.note.isNotEmpty) ...[const SizedBox(height: 4), Text(mark.note, style: t.bodyMedium)],
+            const SizedBox(height: 4),
+            Text('Decided by ${mark.by}', style: t.bodySmall?.copyWith(color: Brand.bark)),
+          ]),
         ),
       ]),
     );

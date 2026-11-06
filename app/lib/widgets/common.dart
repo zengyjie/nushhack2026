@@ -117,6 +117,27 @@ class RoleChip extends StatelessWidget {
       );
 }
 
+/// Marks a record an HQ auditor overruled (voided) or confirmed.
+class AuditChip extends StatelessWidget {
+  const AuditChip({super.key, required this.voided});
+  final bool voided;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+        decoration: BoxDecoration(
+          color: voided ? Brand.stone : Brand.ok.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(voided ? Icons.gavel : Icons.verified_outlined, size: 12, color: voided ? Brand.soil : Brand.ok),
+          const SizedBox(width: 3),
+          Text(voided ? 'Overruled by HQ' : 'Confirmed by HQ',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(color: voided ? Brand.soil : Brand.ok)),
+        ]),
+      );
+}
+
 /// All of a user's roles as chips.
 class RoleChips extends StatelessWidget {
   const RoleChips(this.user, {super.key});

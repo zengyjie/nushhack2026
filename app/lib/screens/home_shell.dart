@@ -5,6 +5,7 @@ import '../theme.dart';
 import '../widgets/common.dart';
 import 'board_screen.dart';
 import 'forms.dart';
+import 'inventory_screen.dart';
 import 'mesh_screen.dart';
 import 'patients_screen.dart';
 import 'unlock_screen.dart';
@@ -30,7 +31,7 @@ class _HomeShellState extends State<HomeShell> {
           icon: const Icon(Icons.person_add_alt_1),
           label: const Text('Register'),
         ),
-      1 when me.has(Role.admin) => FloatingActionButton.extended(
+      2 when me.has(Role.admin) => FloatingActionButton.extended(
           onPressed: () => showCompose(context),
           icon: const Icon(Icons.campaign_outlined),
           label: const Text('Broadcast'),
@@ -43,7 +44,7 @@ class _HomeShellState extends State<HomeShell> {
         titleSpacing: 20,
         title: const Wordmark(size: 22),
         actions: [
-          _MeshPill(onTap: () => setState(() => _tab = 2)),
+          _MeshPill(onTap: () => setState(() => _tab = 3)),
           const SizedBox(width: 6),
           const _ProfileButton(),
           const SizedBox(width: 12),
@@ -52,7 +53,7 @@ class _HomeShellState extends State<HomeShell> {
       ),
       body: IndexedStack(
         index: _tab,
-        children: const [PatientsScreen(), BoardScreen(), MeshScreen()],
+        children: const [PatientsScreen(), InventoryScreen(), BoardScreen(), MeshScreen()],
       ),
       floatingActionButton: fab,
       bottomNavigationBar: NavigationBar(
@@ -63,6 +64,16 @@ class _HomeShellState extends State<HomeShell> {
               icon: Icon(Icons.personal_injury_outlined),
               selectedIcon: Icon(Icons.personal_injury),
               label: 'Patients'),
+          NavigationDestination(
+            icon: Badge(
+              isLabelVisible: store.stock.any((i) => i.low),
+              backgroundColor: Brand.ember,
+              smallSize: 8,
+              child: const Icon(Icons.inventory_2_outlined),
+            ),
+            selectedIcon: const Icon(Icons.inventory_2),
+            label: 'Stock',
+          ),
           NavigationDestination(
             icon: Badge(
               isLabelVisible: store.announcements.any((a) => a.urgent),

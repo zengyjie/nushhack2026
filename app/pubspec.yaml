@@ -13,6 +13,7 @@ dependencies:
   flutter_secure_storage: ^11.2.0
   flutter_svg: ^2.3.2
   google_fonts: ^9.0.0
+  http: ^1.6.0
   path: ^1.9.1
   sqflite: ^2.4.5
 

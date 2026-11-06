@@ -77,6 +77,9 @@ class Entry {
     required this.text,
     this.fields = const {},
     this.reach = Reach.cluster,
+    this.facility = '',
+    this.audit,
+    this.priority,
   });
 
   final EntryType type;
@@ -85,6 +88,31 @@ class Entry {
   final String text;
   final Map<String, String> fields;
   Reach reach;
+  final String facility;
+
+  /// Set when an HQ auditor ruled on this entry in a conflict.
+  final AuditMark? audit;
+
+  /// The priority this entry sets (registration and priority changes only).
+  final Priority? priority;
+
+  bool get voided => audit?.voided ?? false;
+}
+
+/// An HQ audit decision as it applies to one record.
+class AuditMark {
+  const AuditMark({required this.voided, required this.note, required this.by, required this.kind});
+  final bool voided; // overruled (true) or confirmed (false)
+  final String note;
+  final String by;
+  final String kind; // triage, venue, duplicate
+
+  String get kindLabel => switch (kind) {
+        'triage' => 'conflicting triage',
+        'venue' => 'patient at two venues',
+        'duplicate' => 'duplicate registration',
+        _ => kind,
+      };
 }
 
 class Patient {
@@ -95,6 +123,9 @@ class Patient {
     required this.priority,
     required this.location,
     required this.entries,
+    this.name = '',
+    this.ident = '',
+    this.facility = '',
   });
 
   final String id;
@@ -103,8 +134,16 @@ class Patient {
   Priority priority;
   final String location;
   final List<Entry> entries;
+  final String name;
+  final String ident; // service number / ID tag
+  final String facility;
 
-  bool has(EntryType t) => entries.any((e) => e.type == t);
+  /// The registration itself was overruled by an HQ audit (e.g. a duplicate record).
+  bool get voided => entries.isNotEmpty && entries.first.type == EntryType.registered && entries.first.voided;
+
+  String get displayName => [name, if (ident.isNotEmpty) 'ID $ident'].where((s) => s.isNotEmpty).join(' · ');
+
+  bool has(EntryType t) => entries.any((e) => e.type == t && !e.voided);
 
   /// Care stage for the progress strip.
   int get stage {
@@ -177,6 +216,83 @@ class PeerView {
   final int rssi;
   final bool inSync;
   final bool busy;
+}
+
+// ---------------------------------------------------------------------- inventory
+
+enum StockCategory {
+  supply('Supplies', Icons.medication_outlined),
+  equipment('Equipment', Icons.monitor_heart_outlined),
+  resource('Resources', Icons.local_shipping_outlined);
+
+  const StockCategory(this.label, this.icon);
+  final String label;
+  final IconData icon;
+}
+
+class StockItem {
+  StockItem({
+    required this.name,
+    required this.category,
+    required this.unit,
+    required this.facility,
+    this.qty = 0,
+    this.min = 0,
+    this.updated,
+    this.by,
+  });
+
+  String name;
+  StockCategory category;
+  String unit;
+  final String facility;
+  int qty;
+  int min;
+  DateTime? updated;
+  User? by;
+  Reach reach = Reach.cluster;
+
+  bool get low => min > 0 && qty <= min;
+}
+
+enum RequestStatus {
+  pending('Pending', Brand.ember),
+  approved('Approved', Color(0xFF1F4C86)),
+  dispatched('Dispatched', Brand.ok),
+  denied('Denied', Brand.t1);
+
+  const RequestStatus(this.label, this.color);
+  final String label;
+  final Color color;
+}
+
+class SupplyRequest {
+  SupplyRequest({
+    required this.rid,
+    required this.item,
+    required this.qty,
+    required this.unit,
+    required this.urgent,
+    required this.note,
+    required this.facility,
+    required this.by,
+    required this.time,
+    required this.reach,
+  });
+
+  final String rid;
+  final String item;
+  final int qty;
+  final String unit;
+  final bool urgent;
+  final String note;
+  final String facility;
+  final User by;
+  final DateTime time;
+  Reach reach;
+  RequestStatus status = RequestStatus.pending;
+  String hqNote = '';
+  DateTime? updated;
 }
 
 class MeshLog {

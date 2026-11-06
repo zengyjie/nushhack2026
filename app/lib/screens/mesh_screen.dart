@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/settings.dart';
 import '../model/models.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
@@ -75,7 +76,7 @@ class MeshScreen extends StatelessWidget {
                 onChanged: store.setUplink,
                 title: Text('Uplink to HQ', style: t.titleSmall),
                 subtitle: Text(store.uplink
-                    ? 'This phone forwards the cluster\'s records to HQ (mock HQ store on this device).'
+                    ? 'This phone relays the cluster to HQ and floods HQ broadcasts back over Bluetooth.'
                     : 'Turn on when this phone has internet.'),
                 secondary: Icon(store.uplink ? Icons.cloud_done : Icons.cloud_off_outlined,
                     color: store.uplink ? Brand.ok : Brand.bark),
@@ -100,11 +101,19 @@ class MeshScreen extends StatelessWidget {
                             : 'Last HQ ack ${timeAgo(store.lastHqSync!)} via ${store.nameOfDevice(store.lastGateway) ?? 'uplink'}',
                         style: t.bodySmall?.copyWith(color: Brand.bark),
                       ),
+                      if (store.uplink && store.hqError != null) ...[
+                        const SizedBox(height: 6),
+                        Text(store.hqError!, style: t.bodySmall?.copyWith(color: Brand.t1)),
+                      ] else if (store.uplink && store.lastHqContact != null) ...[
+                        const SizedBox(height: 2),
+                        Text('HQ reachable · last contact ${timeAgo(store.lastHqContact!)}',
+                            style: t.bodySmall?.copyWith(color: Brand.ok)),
+                      ],
                     ]),
                   ),
                   if (store.uplink)
                     FilledButton(
-                      onPressed: store.syncing || store.pendingHq == 0 ? null : store.syncNow,
+                      onPressed: store.syncing ? null : store.syncNow,
                       child: store.syncing
                           ? const SizedBox(
                               width: 18,
@@ -117,6 +126,9 @@ class MeshScreen extends StatelessWidget {
             ]),
           ),
         ),
+
+        const SectionLabel('Device settings'),
+        const _SettingsCard(),
 
         // ---------------------------------------------------------------- peers
         SectionLabel('In range · ${peers.length}'),
@@ -172,6 +184,86 @@ class MeshScreen extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// HQ server address (e.g. a Cloudflare tunnel URL) and this phone's facility.
+class _SettingsCard extends StatefulWidget {
+  const _SettingsCard();
+
+  @override
+  State<_SettingsCard> createState() => _SettingsCardState();
+}
+
+class _SettingsCardState extends State<_SettingsCard> {
+  TextEditingController? _url;
+  TextEditingController? _fac;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final store = StoreScope.of(context);
+    _url ??= TextEditingController(text: store.settings.hqUrl);
+    _fac ??= TextEditingController(text: store.facility);
+  }
+
+  @override
+  void dispose() {
+    _url?.dispose();
+    _fac?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final store = StoreScope.of(context);
+    final urlDirty = Settings.normaliseUrl(_url!.text) != store.settings.hqUrl;
+    final facDirty = _fac!.text.trim() != store.facility;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          TextField(
+            controller: _url,
+            keyboardType: TextInputType.url,
+            autocorrect: false,
+            decoration: const InputDecoration(
+              labelText: 'HQ server',
+              hintText: 'https://xxxx.trycloudflare.com',
+              helperText: 'Used when Uplink is on',
+              prefixIcon: Icon(Icons.dns_outlined),
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _fac,
+            textCapitalization: TextCapitalization.words,
+            decoration: const InputDecoration(
+              labelText: 'Facility',
+              helperText: 'Tags new patients and stock from this phone',
+              prefixIcon: Icon(Icons.local_hospital_outlined),
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 12),
+          FilledButton(
+            onPressed: !urlDirty && !facDirty
+                ? null
+                : () async {
+                    final messenger = ScaffoldMessenger.of(context);
+                    FocusScope.of(context).unfocus();
+                    if (facDirty) await store.setFacility(_fac!.text);
+                    if (urlDirty) await store.setHqUrl(_url!.text);
+                    _url!.text = store.settings.hqUrl;
+                    setState(() {});
+                    messenger.showSnackBar(const SnackBar(content: Text('Settings saved')));
+                  },
+            child: const Text('Save settings'),
+          ),
+        ]),
+      ),
     );
   }
 }

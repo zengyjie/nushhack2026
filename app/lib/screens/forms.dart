@@ -4,7 +4,7 @@ import '../model/models.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 
-Future<void> _sheet(BuildContext context, Widget child) => showModalBottomSheet<void>(
+Future<void> showFormSheet(BuildContext context, Widget child) => showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       builder: (_) => Padding(
@@ -13,7 +13,7 @@ Future<void> _sheet(BuildContext context, Widget child) => showModalBottomSheet<
       ),
     );
 
-Widget _title(BuildContext context, String title, String sub) => Padding(
+Widget sheetTitle(BuildContext context, String title, String sub) => Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(title, style: Theme.of(context).textTheme.titleLarge),
@@ -22,7 +22,7 @@ Widget _title(BuildContext context, String title, String sub) => Padding(
       ]),
     );
 
-Widget _signNote(BuildContext context) => Padding(
+Widget signNote(BuildContext context) => Padding(
       padding: const EdgeInsets.only(top: 10),
       child: Row(children: [
         const Icon(Icons.draw_outlined, size: 15, color: Brand.bark),
@@ -35,7 +35,7 @@ Widget _signNote(BuildContext context) => Padding(
     );
 
 /// Closes the sheet, signs and stores the event, then reports the outcome.
-void _sign(BuildContext context, String done, Future<Object?> Function() action) {
+void signAndClose(BuildContext context, String done, Future<Object?> Function() action) {
   final messenger = ScaffoldMessenger.of(context);
   Navigator.pop(context);
   action().then(
@@ -46,7 +46,7 @@ void _sign(BuildContext context, String done, Future<Object?> Function() action)
 
 // ------------------------------------------------------------------ register patient (triage)
 
-Future<void> showRegisterPatient(BuildContext context) => _sheet(context, const _RegisterForm());
+Future<void> showRegisterPatient(BuildContext context) => showFormSheet(context, const _RegisterForm());
 
 class _RegisterForm extends StatefulWidget {
   const _RegisterForm();
@@ -57,17 +57,18 @@ class _RegisterForm extends StatefulWidget {
 
 class _RegisterFormState extends State<_RegisterForm> {
   final _desc = TextEditingController();
+  final _location = TextEditingController();
+  final _name = TextEditingController();
+  final _ident = TextEditingController();
   Priority _priority = Priority.t2;
-  String _location = 'Tent 1 · Bay A';
-
-  static const _locations = ['Tent 1 · Bay A', 'Tent 1 · Bay B', 'Tent 2 · Bay A', 'Tent 2 · Bay C', 'Holding'];
 
   @override
   Widget build(BuildContext context) {
     final store = StoreScope.of(context);
     final nextId = store.nextPatientId;
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      _title(context, 'Register patient', '$nextId · arrival ${hhmm(DateTime.now())}'),
+      sheetTitle(context, 'Register patient',
+          '$nextId · arrival ${hhmm(DateTime.now())}${store.facility.isEmpty ? '' : ' · ${store.facility}'}'),
       const SectionLabel('Triage priority'),
       Row(children: [
         for (final pr in Priority.values) ...[
@@ -84,23 +85,55 @@ class _RegisterFormState extends State<_RegisterForm> {
         onChanged: (_) => setState(() {}),
       ),
       const SizedBox(height: 12),
-      DropdownButtonFormField<String>(
-        initialValue: _location,
-        decoration: const InputDecoration(labelText: 'Location', prefixIcon: Icon(Icons.place_outlined)),
-        items: [for (final l in _locations) DropdownMenuItem(value: l, child: Text(l))],
-        onChanged: (v) => setState(() => _location = v ?? _location),
+      TextField(
+        controller: _location,
+        textCapitalization: TextCapitalization.sentences,
+        decoration: const InputDecoration(labelText: 'Location', hintText: 'Tent / bay', prefixIcon: Icon(Icons.place_outlined)),
+        onChanged: (_) => setState(() {}),
+      ),
+      const SectionLabel('Identity (if known)'),
+      Row(children: [
+        Expanded(
+          child: TextField(
+            controller: _name,
+            textCapitalization: TextCapitalization.words,
+            decoration: const InputDecoration(labelText: 'Name'),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: TextField(
+            controller: _ident,
+            textCapitalization: TextCapitalization.characters,
+            decoration: const InputDecoration(labelText: 'Service no. / ID tag'),
+          ),
+        ),
+      ]),
+      Padding(
+        padding: const EdgeInsets.only(top: 6),
+        child: Text('HQ uses the ID tag to catch one person registered at two facilities.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Brand.bark)),
       ),
       const SizedBox(height: 18),
       FilledButton(
-        onPressed: _desc.text.trim().isEmpty
+        onPressed: _desc.text.trim().isEmpty || _location.text.trim().isEmpty
             ? null
             : () {
-                _sign(context, 'Patient $nextId registered and signed',
-                    () => store.registerPatient(description: _desc.text.trim(), priority: _priority, location: _location));
+                signAndClose(
+                  context,
+                  'Patient $nextId registered and signed',
+                  () => store.registerPatient(
+                    description: _desc.text.trim(),
+                    priority: _priority,
+                    location: _location.text.trim(),
+                    name: _name.text,
+                    ident: _ident.text,
+                  ),
+                );
               },
         child: const Text('Register'),
       ),
-      _signNote(context),
+      signNote(context),
     ]);
   }
 }
@@ -137,19 +170,19 @@ class _PriorityButton extends StatelessWidget {
 
 // ------------------------------------------------------------------ change priority (triage)
 
-Future<void> showPriorityPicker(BuildContext context, Patient p) => _sheet(
+Future<void> showPriorityPicker(BuildContext context, Patient p) => showFormSheet(
       context,
       Builder(builder: (context) {
         final store = StoreScope.of(context);
         return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          _title(context, 'Change priority', '${p.id} · currently ${p.priority.code} ${p.priority.label}'),
+          sheetTitle(context, 'Change priority', '${p.id} · currently ${p.priority.code} ${p.priority.label}'),
           for (final pr in Priority.values) ...[
             _PriorityButton(
               pr: pr,
               selected: p.priority == pr,
               onTap: () {
                 if (pr == p.priority) return Navigator.pop(context);
-                _sign(context, 'Priority set to ${pr.code} ${pr.label}', () => store.setPriority(p, pr));
+                signAndClose(context, 'Priority set to ${pr.code} ${pr.label}', () => store.setPriority(p, pr));
               },
             ),
             const SizedBox(height: 8),
@@ -161,7 +194,7 @@ Future<void> showPriorityPicker(BuildContext context, Patient p) => _sheet(
 // ------------------------------------------------------------------ clinical entries
 
 Future<void> showEntryForm(BuildContext context, Patient p, EntryType type) =>
-    _sheet(context, _EntryForm(patient: p, type: type));
+    showFormSheet(context, _EntryForm(patient: p, type: type));
 
 class _EntryForm extends StatefulWidget {
   const _EntryForm({required this.patient, required this.type});
@@ -208,7 +241,7 @@ class _EntryFormState extends State<_EntryForm> {
     final (label, hint) = _copy;
     final numeric = widget.type == EntryType.observation;
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      _title(context, widget.type.label, '${widget.patient.id} · ${widget.patient.priority.code} · ${widget.patient.location}'),
+      sheetTitle(context, widget.type.label, '${widget.patient.id} · ${widget.patient.priority.code} · ${widget.patient.location}'),
       if (numeric)
         LayoutBuilder(builder: (context, c) => Wrap(spacing: 8, runSpacing: 8, children: [
           for (final (k, unit) in _fieldSpec)
@@ -253,19 +286,19 @@ class _EntryFormState extends State<_EntryForm> {
                   for (final e in _fields.entries)
                     if (e.value.text.trim().isNotEmpty) e.key: e.value.text.trim(),
                 };
-                _sign(context, '${widget.type.label} recorded for ${widget.patient.id}',
+                signAndClose(context, '${widget.type.label} recorded for ${widget.patient.id}',
                     () => store.addEntry(widget.patient, widget.type, _text.text.trim(), fields));
               },
         child: const Text('Sign and save'),
       ),
-      _signNote(context),
+      signNote(context),
     ]);
   }
 }
 
 // ------------------------------------------------------------------ admin broadcast
 
-Future<void> showCompose(BuildContext context) => _sheet(context, const _ComposeForm());
+Future<void> showCompose(BuildContext context) => showFormSheet(context, const _ComposeForm());
 
 class _ComposeForm extends StatefulWidget {
   const _ComposeForm();
@@ -294,7 +327,7 @@ class _ComposeFormState extends State<_ComposeForm> {
     final ok = _body.text.trim().isNotEmpty && (!_announcement || _titleCtl.text.trim().isNotEmpty);
 
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      _title(context, 'Broadcast', 'Floods to every device in the cluster, then to HQ via any uplink'),
+      sheetTitle(context, 'Broadcast', 'Floods to every device in the cluster, then to HQ via any uplink'),
       SegmentedButton<bool>(
         segments: const [
           ButtonSegment(value: true, label: Text('Announcement'), icon: Icon(Icons.campaign_outlined)),
@@ -344,7 +377,7 @@ class _ComposeFormState extends State<_ComposeForm> {
         onPressed: !ok
             ? null
             : () {
-                _sign(
+                signAndClose(
                   context,
                   _announcement ? 'Announcement broadcast to cluster' : 'Message sent',
                   () => _announcement
@@ -355,7 +388,7 @@ class _ComposeFormState extends State<_ComposeForm> {
         icon: const Icon(Icons.send),
         label: const Text('Sign and broadcast'),
       ),
-      _signNote(context),
+      signNote(context),
     ]);
   }
 

@@ -203,34 +203,3 @@ class Ledger {
 
   Future<void> close() => _db.close();
 }
-
-/// Mock HQ database, kept on whichever phone has the uplink switched on.
-/// Stands in for the FastAPI and PostgreSQL backend, which is out of scope.
-class MockHqStore {
-  MockHqStore._(this._db);
-  final Database _db;
-
-  static Future<MockHqStore> open() async {
-    final db = await openDatabase(
-      p.join(await getDatabasesPath(), 'mock_hq.db'),
-      version: 1,
-      onCreate: (db, _) => db.execute(
-          'CREATE TABLE uploads (id TEXT PRIMARY KEY, json TEXT NOT NULL, uploaded_at INTEGER NOT NULL)'),
-    );
-    return MockHqStore._(db);
-  }
-
-  static Future<void> deleteAll() async => deleteDatabase(p.join(await getDatabasesPath(), 'mock_hq.db'));
-
-  Future<void> upload(List<SignedEvent> events) async {
-    final batch = _db.batch();
-    final now = DateTime.now().millisecondsSinceEpoch;
-    for (final e in events) {
-      batch.insert('uploads', {'id': e.id, 'json': e.encode(), 'uploaded_at': now},
-          conflictAlgorithm: ConflictAlgorithm.ignore);
-    }
-    await batch.commit(noResult: true);
-  }
-
-  Future<int> count() async => Sqflite.firstIntValue(await _db.rawQuery('SELECT COUNT(*) FROM uploads')) ?? 0;
-}

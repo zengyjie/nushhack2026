@@ -1,0 +1,47 @@
+{
+  "cert": {
+    "v": 1,
+    "uid": "u-fixture",
+    "name": "Fixture \"Medic\" – Ünïcode",
+    "roles": [
+      "triage",
+      "clinician"
+    ],
+    "dev": "2a2a2a2a",
+    "pk": "GX9rI+FshTLGq8g4+s1ep4m+DHaykgM0A5v6iz02jWE=",
+    "iat": 1793995429907,
+    "exp": 2109355429907,
+    "sig": "67eHXUGhBEr1C45L7qrXinIHjqkZtzNjf6cMuZrizbkm3aBPIaeZQr9aUDG4LqTsvsLajgWvgefbMesqB8OvBQ=="
+  },
+  "event": {
+    "id": "9c429f737da952cf28cc108bdb281454c98b0722ab09526391c839b11f14fdf2",
+    "body": {
+      "v": 1,
+      "uid": "u-fixture",
+      "dev": "2a2a2a2a",
+      "seq": 1,
+      "prev": "",
+      "ts": 1793995429948,
+      "type": "PatientRegistered",
+      "data": {
+        "pid": "P-2A2A-01",
+        "desc": "Line one\nline \"two\" \\ tab\t SpO₂ 94% – émigré",
+        "priority": "t1",
+        "loc": "Tent 1 · Bay A",
+        "fac": "FH North",
+        "nested": {
+          "z": [
+            3,
+            2,
+            1
+          ],
+          "a": true,
+          "m": null
+        }
+      }
+    },
+    "sig": "5X6X1OjUH5BbRH1qWmCb5BPnmXFzW/bAgVOiracsnhtDWgwAwaCyUYTcOEPfNh9MAysUSqALb23/zUJFA0PeDg=="
+  },
+  "canonical_body_b64": "eyJkYXRhIjp7ImRlc2MiOiJMaW5lIG9uZVxubGluZSBcInR3b1wiIFxcIHRhYlx0IFNwT+KCgiA5NCUg4oCTIMOpbWlncsOpIiwiZmFjIjoiRkggTm9ydGgiLCJsb2MiOiJUZW50IDEgwrcgQmF5IEEiLCJuZXN0ZWQiOnsiYSI6dHJ1ZSwibSI6bnVsbCwieiI6WzMsMiwxXX0sInBpZCI6IlAtMkEyQS0wMSIsInByaW9yaXR5IjoidDEifSwiZGV2IjoiMmEyYTJhMmEiLCJwcmV2IjoiIiwic2VxIjoxLCJ0cyI6MTc5Mzk5NTQyOTk0OCwidHlwZSI6IlBhdGllbnRSZWdpc3RlcmVkIiwidWlkIjoidS1maXh0dXJlIiwidiI6MX0=",
+  "hq_public_key_b64": "G0t//gE4kHuNgdsbvNNnJNjPMvlJ/D6n/Bn3e6U0I48="
+}
