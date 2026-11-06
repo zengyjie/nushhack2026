@@ -1,0 +1,23 @@
+singapore government agency inciedent reporting/manage platform
+
+todo
+find exisiting issues with agency collaboration
+
+find possible disasters/incidents/crime and required solutions
+
+consider online/offline processing requirements and create scaled-down, updated when online versions for those needed
+something involving training a network for a task like survivor recogntition
+
+bluetooth mesh network with BLE -> adapt to answer the question on when it goes offline and not just preventing 'offline' in some sense
+
+compilation/conflict resolution system
+agent-backed interfaced with human confirmation
+
+cross platform, mobile & desktop dashboard
+
+key features:
+AI model trained for some specific response task
+broad coverage for various types of public safety incidents including crime, cyber incidents, natural disasters, pandemic/public health, logistics/transport accidents, public utilities/facilities/infrastructure failure, missing persons rescue
+offline-first tamper-evident communication due to cyberattack risk, for courts
+AI-enabled conflict resolution
+
