@@ -1,5 +1,0 @@
-data/
-tests/
-**/__pycache__/
-.env
-*.pyc
